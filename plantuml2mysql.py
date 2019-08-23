@@ -1,9 +1,8 @@
-#!/usr/bin/env python3
+ #!/usr/bin/env python3
 #-*-coding:utf-8-*-
 # Usage: ./plantuml2mysql <dbsource.plu> <dbname>
-# Author: Alexander I.Grafov <grafov@gmail.com>
-# See https://github.com/grafov/plantuml2mysql
-# The code is public domain.
+#Open Power Shell and Switch Directory: cd U:\VIVIJ\TaxDataHub\Information_Modelling 
+# python plantuml2mysql.py information_model_v1.puml sqlDwhTest
 
 CHARSET="utf8_unicode_ci"
 
@@ -19,9 +18,8 @@ def strip_html_tags(t):
 
 # A minimal help
 def print_usage():
-  print("Convert PlantUML classes schema into mySQL database creation script")
+  print("Convert PlantUML classes schema into SQL database creation script")
   print("Usage:\n", sys.argv[0], "<dbsource.plu> <dbname>")
-  print("\nSee https://github.com/grafov/plantuml2mysql for details\n")
 
 def main():
     # Check arguments (exactly 1 + 2):
@@ -35,9 +33,14 @@ def main():
         print("Cannot open file: '" + sys.argv[1] + "'")
         sys.exit()
     # Add information for future self ;-)
-    print("# Database created on", time.strftime('%d/%m/%y %H:%M',time.localtime()), "from", sys.argv[1])
-    print("CREATE DATABASE %s CHARACTER SET = utf8 COLLATE = %s;" % (sys.argv[2], CHARSET))
-    print("USE %s;\n" % sys.argv[2])
+    print('')
+    print('')
+    print('####################################################################################################')
+    print("****************************\t TDH Info Model DB Script")
+    print("****************************\t Script Generated on", time.strftime('%d/%m/%y %H:%M',time.localtime()), "from", sys.argv[1])
+    print('####################################################################################################')    
+    print('')
+    print('')
     uml = False; table = False; field = False
     pk = False; idx = False
     primary = []; index = ""
@@ -71,23 +74,25 @@ def main():
             uml = False
             continue
         if not uml:
-             continue
+             continue     
         if l.startswith("class"):
             table = True; field = False
             primary = []; index = ""
             # Table names are quoted and lower cased to avoid conflict with a mySQL reserved word
-            print("CREATE TABLE IF NOT EXISTS `" + i[1].lower() + "` (")
+            print("CREATE TABLE stg." + i[1].lower() + " (")
             continue
         if table and not field and l == "==": # Seperator after table description
             field = True
             continue
         if field and l == "}":
             table = False; field = False
-            print("  PRIMARY KEY (%s)" % ", ".join(primary), end="")
+            if primary: #Vips
+                print("  PRIMARY KEY (%s)" % ", ".join(primary), end="")
             if index:
                 print(",\n%s" % index[:-2],)
                 index = ""
             print(");\n")
+            print("GO\n") #Vips
             continue
         if field and l == "#id":
             print("  %-16s SERIAL," % "id")
@@ -101,7 +106,7 @@ def main():
             primary.append(fname)
         if field and idx:
             index += "  INDEX (%s),\n" % fname
-
+            
 
 if __name__ == "__main__":
     main()
